@@ -1,0 +1,7 @@
+Flask
+gTTS
+SpeechRecognition
+PyPDF2
+pdfkit
+textblob
+langdetect

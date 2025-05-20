@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLP Tool Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Custom CSS for world-class design */
+        body {
+            background: radial-gradient(circle at 50% 50%, #e0f7ff, #f0f4f8, #d1e0e6);
+            animation: gradientShift 15s ease infinite;
+            font-family: 'Inter', sans-serif;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+            backdrop-filter: blur(8px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        .btn {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease;
+        }
+        .btn:hover::after {
+            width: 200px;
+            height: 200px;
+        }
+        .input, .textarea, .file-input {
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .input:focus, .textarea:focus {
+            border-color: transparent;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+            background: white;
+        }
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .audio-player::-webkit-media-controls-panel {
+            background: linear-gradient(to right, #3b82f6, #60a5fa);
+            border-radius: 8px;
+        }
+        .file-input::-webkit-file-upload-button {
+            background: #60a5fa;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .file-input::-webkit-file-upload-button:hover {
+            background: #3b82f6;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        /* Mobile adjustments */
+        @media (max-width: 639px) {
+            .card {
+                padding: 1rem;
+            }
+            .btn {
+                padding: 0.75rem 1.5rem;
+                font-size: 0.875rem;
+            }
+            .input, .textarea {
+                font-size: 0.875rem;
+                padding: 0.75rem;
+            }
+            .text-5xl {
+                font-size: 2.25rem;
+            }
+            .text-3xl {
+                font-size: 1.5rem;
+            }
+            .text-base {
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-900 font-sans">
+    <div class="container mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
+        <div class="text-center mb-12 fade-in">
+            <h1 class="text-3xl sm:text-5xl font-extrabold gradient-text drop-shadow-lg">🧠 NLP Tool Suite</h1>
+            <p class="text-gray-600 mt-3 text-base sm:text-lg font-medium">Unleash the Power of Language Understanding</p>
+        </div>
+
+        <!-- TTS -->
+        <form action="/tts" method="POST" class="space-y-6 bg-transparent p-6 sm:p-8 card rounded-3xl mb-10 border-2 border-blue-300/50" aria-label="Text to Speech Form">
+            <h2 class="text-xl sm:text-3xl font-bold text-blue-700 flex items-center gap-2">
+                <span class="text-blue-500 animate-pulse">🎤</span> Text to Speech
+            </h2>
+            <textarea name="text" rows="4" class="textarea w-full p-4 border-2 border-blue-200/50 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/50 placeholder-gray-400 text-sm sm:text-base" placeholder="Enter text to convert to speech..." required></textarea>
+            <button class="btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md" type="submit">Generate Audio</button>
+            {% if tts_path %}
+            <div class="mt-6 space-y-4 fade-in">
+                <audio controls autoplay class="audio-player w-full rounded-lg shadow-sm">
+                    <source src="{{ url_for('static', filename='audio/' + tts_path) }}" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+                <a href="{{ url_for('static', filename='audio/' + tts_path) }}" download class="text-blue-600 font-medium hover:text-blue-800 transition flex items-center gap-2 text-sm sm:text-base">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download Audio
+                </a>
+            </div>
+            {% endif %}
+            {% if tts_error %}
+            <div class="mt-6 p-4 bg-red-100 text-red-800 rounded-xl text-sm sm:text-base fade-in">{{ tts_error }}</div>
+            {% endif %}
+        </form>
+
+        <!-- STT -->
+        <form action="/stt" method="POST" enctype="multipart/form-data" class="space-y-6 bg-transparent p-6 sm:p-8 card rounded-3xl mb-10 border-2 border-green-300/50" aria-label="Speech to Text Form">
+            <h2 class="text-xl sm:text-3xl font-bold text-green-700 flex items-center gap-2">
+                <span class="text-green-500 animate-pulse">🎧</span> Speech to Text
+            </h2>
+            <input type="file" name="audio" accept="audio/*" class="file-input block w-full p-3 border-2 border-green-200/50 rounded-xl text-sm sm:text-base text-gray-600">
+            <button class="btn bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md" type="submit">Convert to PDF</button>
+            {% if stt_text %}
+            <div class="mt-6 space-y-4 fade-in">
+                <p class="font-semibold text-green-800 text-sm sm:text-base">Speech-to-Text Output:</p>
+                <p class="bg-white/80 p-4 rounded-xl border border-green-200/50 whitespace-pre-line text-sm sm:text-base text-gray-700 shadow-sm">{{ stt_text }}</p>
+                {% if pdf_path %}
+                <a href="{{ url_for('static', filename='pdfs/' + pdf_path) }}" download class="text-green-600 font-medium hover:text-green-800 transition flex items-center gap-2 text-sm sm:text-base">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download PDF
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if stt_error %}
+            <div class="mt-6 p-4 bg-red-100 text-red-800 rounded-xl text-sm sm:text-base fade-in">{{ stt_error }}</div>
+            {% endif %}
+        </form>
+
+        <!-- Sentiment Analysis -->
+        <form action="/sentiment" method="POST" class="space-y-6 bg-transparent p-6 sm:p-8 card rounded-3xl mb-10 border-2 border-purple-300/50" aria-label="Sentiment Analysis Form">
+            <h2 class="text-xl sm:text-3xl font-bold text-purple-700 flex items-center gap-2">
+                <span class="text-purple-500 animate-pulse">💬</span> Sentiment Analysis
+            </h2>
+            <input type="text" name="text" class="input w-full p-4 border-2 border-purple-200/50 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-400/50 placeholder-gray-400 text-sm sm:text-base" placeholder="Enter text for sentiment analysis..." required>
+            <button class="btn bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md" type="submit">Analyze</button>
+            {% if sentiment %}
+            <div class="mt-6 fade-in">
+                <p class="font-semibold text-purple-800 text-sm sm:text-base">Sentiment:</p>
+                <p class="text-lg text-purple-900 font-medium bg-white/80 p-4 rounded-xl border border-purple-200/50 shadow-sm">{{ sentiment }}</p>
+            </div>
+            {% endif %}
+            {% if sentiment_error %}
+            <div class="mt-6 p-4 bg-red-100 text-red-800 rounded-xl text-sm sm:text-base fade-in">{{ sentiment_error }}</div>
+            {% endif %}
+        </form>
+
+        <!-- Language Detection -->
+        <form action="/language" method="POST" class="space-y-6 bg-transparent p-6 sm:p-8 card rounded-3xl border-2 border-yellow-300/50" aria-label="Language Detection Form">
+            <h2 class="text-xl sm:text-3xl font-bold text-yellow-700 flex items-center gap-2">
+                <span class="text-yellow-500 animate-pulse">🌍</span> Language Detection
+            </h2>
+            <input type="text" name="text" class="input w-full p-4 border-2 border-yellow-200/50 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-400/50 placeholder-gray-400 text-sm sm:text-base" placeholder="Enter text to detect language..." required>
+            <button class="btn bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md" type="submit">Detect</button>
+            {% if language %}
+            <div class="mt-6 fade-in">
+                <p class="font-semibold text-yellow-800 text-sm sm:text-base">Detected Language:</p>
+                <p class="text-lg text-yellow-900 font-medium bg-white/80 p-4 rounded-xl border border-yellow-200/50 shadow-sm">{{ language }}</p>
+            </div>
+            {% endif %}
+            {% if language_error %}
+            <div class="mt-6 p-4 bg-red-100 text-red-800 rounded-xl text-sm sm:text-base fade-in">{{ language_error }}</div>
+            {% endif %}
+        </form>
+    </div>
+
+    <script>
+        // Add loading state to buttons on form submission
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', (e) => {
+                const button = form.querySelector('button[type="submit"]');
+                button.disabled = true;
+                button.innerHTML = '<svg class="animate-spin h-5 w-5 inline mr-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" /></svg> Processing...';
+            });
+        });
+    </script>
+</body>
+</html>
