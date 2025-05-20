@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, send_file
-from app.utils.tts import text_to_speech
-from app.utils.stt import speech_to_text
-from app.utils.sentiment import analyze_sentiment
-from app.utils.language import detect_language
+from core.utils.tts import text_to_speech
+from core.utils.stt import speech_to_text
+from core.utils.sentiment import analyze_sentiment
+from core.utils.language import detect_language
 from langdetect import detect
 import os
 import time
