@@ -9,9 +9,11 @@ import time
 
 main = Blueprint('main', __name__)
 
-# Ensure static/audio/ directory exists
+# Ensure static directories exist
 AUDIO_DIR = os.path.join('static', 'audio')
+PDF_DIR = os.path.join('static', 'pdfs')
 os.makedirs(AUDIO_DIR, exist_ok=True)
+os.makedirs(PDF_DIR, exist_ok=True)
 
 @main.route('/')
 def index():
@@ -25,17 +27,14 @@ def handle_tts():
         return render_template('index.html', tts_error="❌ Please enter some text")
     
     try:
-        # Generate unique filename with timestamp
         timestamp = int(time.time())
         filename = f"tts_output_{timestamp}.mp3"
         filepath = os.path.join(AUDIO_DIR, filename)
         
-        # Generate audio file
         generated_filepath = text_to_speech(text, filepath)
         if not os.path.exists(generated_filepath):
             return render_template('index.html', tts_error="❌ Failed to generate audio")
         
-        # Render template with audio path (relative to static/audio/)
         return render_template('index.html', tts_path=filename)
     except Exception as e:
         return render_template('index.html', tts_error=f"❌ Error: {str(e)}")
@@ -51,7 +50,8 @@ def handle_stt():
     
     try:
         result, pdf_path = speech_to_text(file)
-        return send_file(pdf_path, as_attachment=True)
+        pdf_filename = os.path.basename(pdf_path)
+        return render_template('index.html', stt_text=result, pdf_path=pdf_filename)
     except Exception as e:
         return render_template('index.html', stt_error=f"❌ Error: {str(e)}")
 
