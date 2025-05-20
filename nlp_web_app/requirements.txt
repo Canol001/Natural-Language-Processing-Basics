@@ -7,3 +7,4 @@ textblob
 langdetect
 gunicorn
 pydub==0.25.1
+reportlab==3.6.12
