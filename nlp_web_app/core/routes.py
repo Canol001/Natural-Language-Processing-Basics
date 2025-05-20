@@ -43,15 +43,12 @@ def handle_tts():
 def handle_stt():
     if 'audio' not in request.files:
         return render_template('index.html', stt_error="❌ Please upload an audio file")
-    
     file = request.files['audio']
     if file.filename == '':
         return render_template('index.html', stt_error="❌ No file selected")
-    
     try:
         result, pdf_path = speech_to_text(file)
-        pdf_filename = os.path.basename(pdf_path)
-        return render_template('index.html', stt_text=result, pdf_path=pdf_filename)
+        return render_template('index.html', stt_text=result, pdf_path=pdf_path)
     except Exception as e:
         return render_template('index.html', stt_error=f"❌ Error: {str(e)}")
 
