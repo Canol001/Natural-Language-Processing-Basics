@@ -113,20 +113,7 @@
         @keyframes fadeOut {
             to { opacity: 0; visibility: hidden; }
         }
-        /* Recording popup and overlay styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            display: none;
-        }
-        .modal-overlay.active {
-            display: block;
-        }
+        /* Recording popup styles */
         .recording-popup {
             position: fixed;
             top: 50%;
@@ -141,11 +128,11 @@
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
             max-width: 90%;
             width: 400px;
+        }
+        .recording-popup.hidden {
             display: none;
         }
-        .recording-popup.active {
-            display: block;
-        }
+        /* Close button styles */
         .close-btn {
             position: absolute;
             top: 0.5rem;
@@ -191,7 +178,7 @@
                 font-size: 0.875rem;
             }
             .recording-popup {
-                width: 95%;
+                width: 90%;
                 padding: 1rem;
             }
         }
@@ -204,16 +191,14 @@
             <i class="fas fa-brain mr-2"></i> NLP Tool Suite
         </h1>
         <p class="text-lg sm:text-xl font-medium mb-6">Unleash the Power of Language</p>
+        <p>-----Loading-----</p>
         <svg class="animate-spin h-8 w-8 text-white" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
         </svg>
     </div>
 
-    <!-- Modal Overlay -->
-    <div id="modal-overlay" class="modal-overlay"></div>
-
     <!-- Recording Popup -->
-    <div id="recording-popup" class="recording-popup">
+    <div id="recording-popup" class="recording-popup hidden">
         <button id="close-btn" class="close-btn" title="Close">
             <i class="fas fa-times"></i>
         </button>
@@ -221,9 +206,9 @@
             <i class="fas fa-microphone text-green-500"></i> Record Audio
         </h3>
         <div class="flex flex-col gap-4">
-            <button id="record-btn" class="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold text-sm" onclick="startRecording()">Start Recording</button>
-            <button id="stop-btn" class="btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm hidden" onclick="stopRecording()">Stop Recording</button>
-            <button id="done-btn" class="btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold text-sm hidden" onclick="submitRecording()">Done</button>
+            <button id="record-btn" class="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold text-sm">Start Recording</button>
+            <button id="stop-btn" class="btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold text-sm hidden">Stop Recording</button>
+            <button id="done-btn" class="btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold text-sm hidden">Done</button>
         </div>
     </div>
 
@@ -329,10 +314,10 @@
     </div>
 
     <script>
-        // Splash screen logic (show on every manual reload)
+        // Splash screen logic (show on every page load/refresh)
         document.addEventListener('DOMContentLoaded', () => {
             const splashScreen = document.getElementById('splash-screen');
-            splashScreen.style.display = 'flex'; // Always show on load
+            splashScreen.classList.remove('hidden'); // Show splash screen
             setTimeout(() => {
                 splashScreen.classList.add('hidden');
             }, 3000);
@@ -355,25 +340,25 @@
         let mediaRecorder = null;
         let audioChunks = [];
         let audioStream = null;
+        let recordedAudioFile = null; // Store the recorded audio file
         const recordBtn = document.getElementById('record-btn');
         const stopBtn = document.getElementById('stop-btn');
         const doneBtn = document.getElementById('done-btn');
         const micBtn = document.getElementById('mic-btn');
-        const recordingPopup = document.getElementById('recording-popup');
-        const modalOverlay = document.getElementById('modal-overlay');
         const closeBtn = document.getElementById('close-btn');
+        const recordingPopup = document.getElementById('recording-popup');
         const audioFileInput = document.getElementById('audio-file');
         const sttForm = document.getElementById('stt-form');
 
-        function showModal() {
-            recordingPopup.classList.add('active');
-            modalOverlay.classList.add('active');
-        }
+        micBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            recordingPopup.classList.remove('hidden');
+        });
 
-        function hideModal() {
-            recordingPopup.classList.remove('active');
-            modalOverlay.classList.remove('active');
-            // Reset modal state
+        closeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            recordingPopup.classList.add('hidden');
+            // Reset modal state but preserve recorded audio
             recordBtn.classList.remove('hidden');
             stopBtn.classList.add('hidden');
             doneBtn.classList.add('hidden');
@@ -385,15 +370,11 @@
                 audioStream.getTracks().forEach(track => track.stop());
                 audioStream = null;
             }
-            audioChunks = [];
-            audioFileInput.value = ''; // Clear file input
-        }
+            // Preserve audioChunks and audioFileInput to keep the recording
+        });
 
-        micBtn.addEventListener('click', showModal);
-
-        closeBtn.addEventListener('click', hideModal);
-
-        async function startRecording() {
+        recordBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
             try {
                 console.log('Requesting microphone access...');
                 audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -410,12 +391,12 @@
                     console.log(`Audio blob size: ${audioBlob.size} bytes`);
                     if (audioBlob.size === 0) {
                         alert('Recording is empty. Please try again.');
-                        hideModal();
+                        recordingPopup.classList.add('hidden');
                         return;
                     }
-                    const audioFile = new File([audioBlob], 'recorded_audio.wav', { type: 'audio/wav' });
+                    recordedAudioFile = new File([audioBlob], 'recorded_audio.wav', { type: 'audio/wav' });
                     const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(audioFile);
+                    dataTransfer.items.add(recordedAudioFile);
                     audioFileInput.files = dataTransfer.files;
                     stopBtn.classList.add('hidden');
                     doneBtn.classList.remove('hidden');
@@ -427,24 +408,27 @@
             } catch (err) {
                 console.error('Error accessing microphone:', err);
                 alert('Could not access microphone. Please check permissions.');
-                hideModal();
+                recordingPopup.classList.add('hidden');
             }
-        }
+        });
 
-        function stopRecording() {
+        stopBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
             }
-        }
+        });
 
-        function submitRecording() {
+        doneBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             if (audioFileInput.files.length > 0) {
-                hideModal();
-                sttForm.submit();
+                recordingPopup.classList.add('hidden');
+                console.log('Ready to submit audio file:', audioFileInput.files[0]);
+                // Form submission is handled by the form's submit event
             } else {
                 alert('No recording available. Please record audio first.');
             }
-        }
+        });
     </script>
 </body>
 </html>
