@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, send_file
+from flask import Blueprint, render_template, request
 from core.utils.tts import text_to_speech
 from core.utils.stt import speech_to_text
 from core.utils.sentiment import analyze_sentiment
@@ -6,6 +6,12 @@ from core.utils.language import detect_language
 from langdetect import detect
 import os
 import time
+import logging
+import traceback
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 main = Blueprint('main', __name__)
 
@@ -15,28 +21,29 @@ PDF_DIR = os.path.join('static', 'pdfs')
 os.makedirs(AUDIO_DIR, exist_ok=True)
 os.makedirs(PDF_DIR, exist_ok=True)
 
-@main.route('/')
+@main.route('/', methods=['GET', 'POST'])
 def index():
+    if request.method == 'POST':
+        logger.debug(f"Unexpected POST to /: Form: {request.form}, Files: {request.files}")
+        return render_template('index.html', general_error="❌ Invalid form submission. Please use the correct form.")
     return render_template('index.html')
 
 @main.route('/tts', methods=['POST'])
 def handle_tts():
     text = request.form.get('text')
-    
     if not text or text.strip() == '':
         return render_template('index.html', tts_error="❌ Please enter some text")
-    
     try:
         timestamp = int(time.time())
         filename = f"tts_output_{timestamp}.mp3"
         filepath = os.path.join(AUDIO_DIR, filename)
-        
         generated_filepath = text_to_speech(text, filepath)
         if not os.path.exists(generated_filepath):
             return render_template('index.html', tts_error="❌ Failed to generate audio")
-        
         return render_template('index.html', tts_path=filename)
     except Exception as e:
+        logger.error(f"TTS error: {str(e)}")
+        logger.error(traceback.format_exc())
         return render_template('index.html', tts_error=f"❌ Error: {str(e)}")
 
 @main.route('/stt', methods=['POST'])
@@ -46,39 +53,41 @@ def handle_stt():
     file = request.files['audio']
     if file.filename == '':
         return render_template('index.html', stt_error="❌ No file selected")
+    logger.debug(f"STT processing file: {file.filename}")
     try:
         result, pdf_path = speech_to_text(file)
         return render_template('index.html', stt_text=result, pdf_path=pdf_path)
     except Exception as e:
+        logger.error(f"STT error: {str(e)}")
+        logger.error(traceback.format_exc())
         return render_template('index.html', stt_error=f"❌ Error: {str(e)}")
 
 @main.route('/sentiment', methods=['POST'])
 def handle_sentiment():
     text = request.form.get('text')
-    
     if not text or text.strip() == '':
         return render_template('index.html', sentiment_error="❌ Please enter some text")
-    
     try:
         sentiment = analyze_sentiment(text)
         return render_template('index.html', sentiment=sentiment)
     except Exception as e:
+        logger.error(f"Sentiment error: {str(e)}")
+        logger.error(traceback.format_exc())
         return render_template('index.html', sentiment_error=f"❌ Error: {str(e)}")
 
 @main.route('/language', methods=['POST'])
 def handle_language():
     text = request.form.get('text')
-    
     if not text or text.strip() == '':
         return render_template('index.html', language_error="❌ Please enter some text")
-
     try:
         code = detect(text)
         language = LANGUAGE_NAMES.get(code, f"Unknown ({code})")
+        return render_template('index.html', language=language)
     except Exception as e:
-        language = f"❌ Error: {str(e)}"
-
-    return render_template('index.html', language=language)
+        logger.error(f"Language detection error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return render_template('index.html', language_error=f"❌ Error: {str(e)}")
 
 # Language names dictionary (unchanged)
 LANGUAGE_NAMES = {

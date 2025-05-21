@@ -1,69 +1,91 @@
-import os
-import speech_recognition as sr
 from pydub import AudioSegment
-import tempfile
-import time
+import speech_recognition as sr
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.pdfgen import canvas
+import os
+import time  # Import time module
+import tempfile
+import traceback
+import logging
 
-
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def speech_to_text(audio_file):
-    PDF_DIR = os.path.join('static', 'pdfs')
-    os.makedirs(PDF_DIR, exist_ok=True)
-    timestamp = int(time.time())
-    pdf_filename = f"stt_output_{timestamp}.pdf"
-    pdf_filepath = os.path.join(PDF_DIR, pdf_filename)
+    logger.debug(f"Processing audio file: {audio_file.filename}")
     
-    # Save uploaded file to temporary location
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.tmp') as temp_file:
+    # Save uploaded file to a temporary location
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
         audio_file.save(temp_file.name)
-        temp_filepath = temp_file.name
-    
+        temp_path = temp_file.name
+        logger.debug(f"Saved temporary file: {temp_path}")
+
     try:
-        # Check file size (limit to 10MB to avoid memory issues)
-        if os.path.getsize(temp_filepath) > 10 * 1024 * 1024:
-            raise ValueError("Audio file is too large (max 10MB)")
+        # Load and normalize audio with pydub
+        logger.debug("Loading audio with pydub...")
+        try:
+            audio = AudioSegment.from_file(temp_path)
+        except Exception as e:
+            logger.error(f"Pydub failed to load audio: {str(e)}")
+            raise Exception(f"Pydub error: {str(e)}")
         
-        # Load audio with pydub
-        audio = AudioSegment.from_file(temp_filepath)
-        wav_filepath = temp_filepath + '.wav'
-        
-        # Export as WAV with consistent settings
-        audio = audio.set_channels(1).set_frame_rate(16000)  # Mono, 16kHz for SpeechRecognition
-        audio.export(wav_filepath, format='wav')
-        
+        logger.debug("Normalizing audio...")
+        audio = audio.set_channels(1).set_frame_rate(16000)  # Optimize for speech recognition
+        audio.export(temp_path, format="wav")
+        logger.debug("Audio exported as WAV")
+
         # Transcribe audio
+        logger.debug("Initializing speech recognizer...")
         recognizer = sr.Recognizer()
-        with sr.AudioFile(wav_filepath) as source:
+        with sr.AudioFile(temp_path) as source:
+            logger.debug("Recording audio data...")
             audio_data = recognizer.record(source)
-            text = recognizer.recognize_google(audio_data)
-        
+            logger.debug("Transcribing with Google API...")
+            try:
+                text = recognizer.recognize_google(audio_data)
+            except sr.UnknownValueError:
+                logger.error("Google API could not understand audio")
+                raise Exception("Speech not recognized")
+            except sr.RequestError as e:
+                logger.error(f"Google API request failed: {str(e)}")
+                raise Exception(f"Transcription service error: {str(e)}")
+            logger.debug(f"Transcription: {text}")
+
         # Generate PDF
-        doc = SimpleDocTemplate(pdf_filepath, pagesize=letter)
-        styles = getSampleStyleSheet()
-        story = [
-            Paragraph("NLP Tool Suite: Speech-to-Text", styles['Title']),
-            Paragraph(f"Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']),
-            Paragraph(text.replace('\n', '<br/>'), styles['BodyText'])
-        ]
-        doc.build(story)
-        
-        # Clean up temporary files
-        os.remove(temp_filepath)
-        os.remove(wav_filepath)
-        
-        return text, pdf_filename  # Return filename, not full path
-    except ValueError as ve:
-        if os.path.exists(temp_filepath):
-            os.remove(temp_filepath)
-        if os.path.exists(wav_filepath):
-            os.remove(wav_filepath)
-        raise ValueError(str(ve))
+        logger.debug("Generating PDF...")
+        pdf_dir = os.path.join('static', 'pdfs')
+        os.makedirs(pdf_dir, exist_ok=True)
+        pdf_filename = f"stt_output_{int(time.time())}.pdf"  # Fixed: os.time() → time.time()
+        pdf_path = os.path.join(pdf_dir, pdf_filename)
+        try:
+            c = canvas.Canvas(pdf_path, pagesize=letter)
+            c.drawString(100, 750, "Speech-to-Text Transcript")
+            text_lines = text.split('\n')
+            y = 700
+            for line in text_lines:
+                c.drawString(100, y, line[:80])  # Truncate long lines
+                y -= 20
+            c.save()
+            logger.debug(f"PDF created: {pdf_path}")
+        except Exception as e:
+            logger.error(f"PDF generation failed: {str(e)}")
+            raise Exception(f"PDF creation error: {str(e)}")
+
+        # Clean up
+        try:
+            os.remove(temp_path)
+            logger.debug(f"Deleted temporary file: {temp_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete temp file: {str(e)}")
+
+        return text, pdf_filename
+
     except Exception as e:
-        if os.path.exists(temp_filepath):
-            os.remove(temp_filepath)
-        if os.path.exists(wav_filepath):
-            os.remove(wav_filepath)
+        logger.error(f"Speech-to-text failed: {str(e)}")
+        logger.error(traceback.format_exc())
+        try:
+            os.remove(temp_path)
+        except:
+            pass
         raise Exception(f"Speech-to-Text failed: {str(e)}")
