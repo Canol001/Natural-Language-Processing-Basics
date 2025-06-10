@@ -21,7 +21,7 @@ A sleek and powerful web-based NLP toolkit that unleashes the power of language 
 
 ### 💬 Sentiment Analysis
 - Detects whether input text is **Positive**, **Negative**, or **Neutral**.
-- Powered by `TextBlob`.
+- Powered by `TextBlob`. modules
 
 ### 🌍 Language Detection
 - Detects the language of input text.
