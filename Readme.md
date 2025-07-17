@@ -42,4 +42,4 @@ A sleek and powerful web-based NLP toolkit that unleashes the power of language 
 ---
 
 ## 📁 Project Structure
-coming soon
+full sys coming soon
